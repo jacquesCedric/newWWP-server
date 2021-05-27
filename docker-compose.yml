@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  server:
+    image: python:buster
+    read_only: true
+    command: python -m http.server --directory ./resources
+    ports:
+      - 8000:8000
+    working_dir: /server
+    volumes:
+      - ./server:/server
+      - resources:/server/resources
+  listener:
+      image: python:buster
+      command: python Listener.py
+      ports:
+       - 3000:3000
+      working_dir: /listener
+      volumes:
+        - ./listener:/listener
+        - resources:/resources
+  bot:
+      build:
+        context: ./bot
+        dockerfile: DOCKERFILE
+      command: python Bot.py
+      network_mode: host
+      volumes:
+        - resources:/resources
+
+volumes:
+  resources:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./resources

@@ -26,7 +26,7 @@ def grabContent():
     raw_messages = []
 
     # First we process messages
-    with open("text/msg.txt") as f:
+    with open("resources/text/msg.txt") as f:
         for line in f:
             raw_messages.append(line.strip())
 
@@ -34,7 +34,7 @@ def grabContent():
         messages.append(i)
 
     # Then votes
-    with open("text/vote.txt") as f:
+    with open("resources/text/vote.txt") as f:
         split = f.read().split()
         counts = collections.Counter(split)
         m_common = counts.most_common(10)
@@ -60,7 +60,7 @@ def generateBase():
         t = ids[x]
         s = t.split(';')
 
-        with open("images/data/" + s[0]) as i:
+        with open("resources/images/data/" + s[0]) as i:
             icon = i.read()
 
         t1 = generateTopic(icon, s[0], 4294967295 + x, s[1], messages[x])
@@ -141,7 +141,7 @@ def generateImagePost(image):
 # Helper functions
 # Grab details using a titleID
 def detailsFromID(titleID):
-    with open("text/titleinfo.txt") as f:
+    with open("resources/text/titleinfo.txt") as f:
         for line in f:
             if line[8:16] == titleID[8:16]:
                 return line.strip()
@@ -156,7 +156,7 @@ def subElementWithText(root, tag, content):
 
 # Grab a random mii, needs to be refined
 def randomMii():
-    with open("text/miiArray.txt") as f:
+    with open("resources/text/miiArray.txt") as f:
         line = next(f)
         for num, aline in enumerate(f, 2):
             if random.randrange(num):
@@ -174,7 +174,7 @@ def main():
     grabContent()
     base = generateBase()
     tree = etree.ElementTree(base)
-    with open('1stNUP.xml', 'wb') as f:
+    with open('resources/1stNUP.xml', 'wb') as f:
         f.write(etree.tostring(tree, pretty_print=True, xml_declaration=True, encoding='UTF-8'))
 
 if __name__ == "__main__":

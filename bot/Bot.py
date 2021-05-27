@@ -1,6 +1,7 @@
 # WWP Bot
 
 import os
+import requests
 from datetime import datetime
 from xml.sax.saxutils import escape, unescape
 
@@ -11,6 +12,8 @@ from discord.ext import commands
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+listener = os.getenv('LISTENER_URL')
+fileserver = os.getenv('FILESERVER_URL')
 
 bot = commands.Bot(command_prefix='!')
 
@@ -35,13 +38,15 @@ async def voteForTitle(ctx, titleID):
     else:
         s = d.split(';')
 
-        embed=discord.Embed(title="Added vote for \"" + s[1] + "\"", description="[" + s[2].upper().rstrip() + "] - " + s[0])
-        file = discord.File("../images/pngs/" + titleID + ".png", filename="image.png")
-        embed.set_thumbnail(url="attachment://image.png")
-
         writeVoteToFile(titleID)
 
+        embed=discord.Embed(title="Added vote for \"" + s[1] + "\"", description="[" + s[2].upper().rstrip() + "] - " + s[0])
+        file = discord.File("/resources/images/pngs/" + titleID + ".png", filename="image.png")
+        embed.set_thumbnail(url="attachment://image.png")
+
         await ctx.send(file=file, embed=embed)
+
+        
 
 @bot.event
 async def on_message(message):
@@ -57,16 +62,21 @@ async def on_message(message):
 
         sanit = escape(unescape(message.content[:100].strip().strip(";;")))
         saname = escape(unescape(message.author.name[:20].strip().strip(";;")))
-        with open("../text/msg.txt", "a") as f:
-            f.write(st + ";;" + sanit + ";;" + saname +"\r")
+        writeChatToFile(saname, st, sanit)
 
 
 # helper functions
 # Vote functions
 # Write titleID to file for vote tallying
 def writeVoteToFile(titleID):
-    with open("../text/vote.txt", "a") as f:
-        f.write(titleID + "\r")
+    data = {"type": "vote", "titleID": titleID}
+    response = requests.post(listener, data)
+    print(response)
+
+def writeChatToFile(author, time, msg):
+    data = {"type": "chat", "author": author, "time": time, "message": msg}
+    response = requests.post(listener, data)
+    print(response)
 
 
 # Printing functions
@@ -87,21 +97,23 @@ def formatSearchResults(results):
 def searchByTitle(term):
     results = []
 
-    with open("../text/titleinfo.txt") as f:
-        for line in f:
-            if term.upper() in line.upper():
-                results.append(line)
-            if len(results) > 5 :
-                return results
+    r = requests.get(fileserver + "/text/titleinfo.txt")
+    r.encoding = "utf-8"
+    for line in r.text.splitlines():
+        if term.upper() in line.upper():
+            results.append(line)
+        if len(results) > 5 :
+            return results
 
     return results
 
 
 def detailsFromID(titleID):
-    with open("../text/titleinfo.txt") as f:
-        for line in f:
-            if line[8:16] == titleID[8:16]:
-                return line
+    r = requests.get(fileserver + "/text/titleinfo.txt")
+    r.encoding = "utf-8"
+    for line in r.text.splitlines():
+        if line[8:16] == titleID[8:16]:
+            return line
     return 0
 
 def titleFromID(titleID):
