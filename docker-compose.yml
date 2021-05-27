@@ -28,6 +28,13 @@ services:
       network_mode: host
       volumes:
         - resources:/resources
+  generator:
+      build: 
+        context: ./generator
+        dockerfile: DOCKERFILE
+      command: python generator.py
+      volumes:
+        - resources:/resources
 
 volumes:
   resources:

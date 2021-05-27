@@ -12,6 +12,7 @@ __status__ = "Prototype"
    Generating 1stNUP.xml files for use with Nintendo Wii U's Wara Wara Plaza
 """
 
+import time, traceback
 from lxml import etree
 import collections
 import random
@@ -26,7 +27,7 @@ def grabContent():
     raw_messages = []
 
     # First we process messages
-    with open("resources/text/msg.txt") as f:
+    with open("/resources/text/msg.txt") as f:
         for line in f:
             raw_messages.append(line.strip())
 
@@ -34,7 +35,7 @@ def grabContent():
         messages.append(i)
 
     # Then votes
-    with open("resources/text/vote.txt") as f:
+    with open("/resources/text/vote.txt") as f:
         split = f.read().split()
         counts = collections.Counter(split)
         m_common = counts.most_common(10)
@@ -60,7 +61,7 @@ def generateBase():
         t = ids[x]
         s = t.split(';')
 
-        with open("resources/images/data/" + s[0]) as i:
+        with open("/resources/images/data/" + s[0]) as i:
             icon = i.read()
 
         t1 = generateTopic(icon, s[0], 4294967295 + x, s[1], messages[x])
@@ -141,7 +142,7 @@ def generateImagePost(image):
 # Helper functions
 # Grab details using a titleID
 def detailsFromID(titleID):
-    with open("resources/text/titleinfo.txt") as f:
+    with open("/resources/text/titleinfo.txt") as f:
         for line in f:
             if line[8:16] == titleID[8:16]:
                 return line.strip()
@@ -156,7 +157,7 @@ def subElementWithText(root, tag, content):
 
 # Grab a random mii, needs to be refined
 def randomMii():
-    with open("resources/text/miiArray.txt") as f:
+    with open("/resources/text/miiArray.txt") as f:
         line = next(f)
         for num, aline in enumerate(f, 2):
             if random.randrange(num):
@@ -168,14 +169,28 @@ def randomMii():
 def chunks(seq, size):
     return (seq[i::size] for i in range(size))
 
+def every(delay, task):
+  next_time = time.time() + delay
+  while True:
+    time.sleep(max(0, next_time - time.time()))
+    try:
+      task()
+    except Exception:
+      logger.exception("Problem while executing repetitive task.")
+    # skip tasks if we are behind schedule:
+    next_time += (time.time() - next_time) // delay * delay + delay
 
 #  Main script
 def main():
     grabContent()
     base = generateBase()
     tree = etree.ElementTree(base)
-    with open('resources/1stNUP.xml', 'wb') as f:
+    with open('/resources/1stNUP.xml', 'wb') as f:
         f.write(etree.tostring(tree, pretty_print=True, xml_declaration=True, encoding='UTF-8'))
+
+    print("updated NUP")
+
 
 if __name__ == "__main__":
     main()
+    every(30, main)
