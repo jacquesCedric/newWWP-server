@@ -163,7 +163,7 @@ def randomMii():
             if random.randrange(num):
                 continue
             line = aline
-        return line
+        return line.strip()
 
 # Divide list into n equal-ish groups
 def chunks(seq, size):
@@ -193,4 +193,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    every(30, main)
+    every(1200, main)
