@@ -99,7 +99,7 @@ def generatePerson(titleID, message, communityid):
     s = message.split(';;')
 
     person = etree.Element('person')
-    posts = generateTextPost(titleID, s[1], s[2], s[0], communityid)
+    posts = generateTextPost(titleID, s[2], s[0], s[1], communityid)
 
     person.append(posts)
 
@@ -189,8 +189,11 @@ def main():
         f.write(etree.tostring(tree, pretty_print=True, xml_declaration=True, encoding='UTF-8'))
 
     print("updated NUP")
+    global messages, ids
+    messages = []
+    ids = []
 
 
 if __name__ == "__main__":
     main()
-    every(1200, main)
+    every(60, main)
