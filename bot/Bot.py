@@ -1,6 +1,8 @@
 # WWP Bot
 
 import os
+import os.path
+from os import path
 import requests
 from datetime import datetime
 from xml.sax.saxutils import escape, unescape
@@ -15,7 +17,16 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 listener = os.getenv('LISTENER_URL')
 fileserver = os.getenv('FILESERVER_URL')
 
-bot = commands.Bot(command_prefix='!')
+help_command = commands.DefaultHelpCommand(
+    no_category = 'Commands'
+)
+
+# bot = commands.Bot(command_prefix='!')
+bot = commands.Bot(
+    command_prefix = '!',
+    description = 'I help to search and vote for Wii U titles',
+    help_command = help_command
+)
 
 @bot.command(name="search", help="Search for ids by title")
 async def searchForTitle(ctx, term):
@@ -38,15 +49,21 @@ async def voteForTitle(ctx, titleID):
     else:
         s = d.split(';')
 
-        writeVoteToFile(titleID)
-
         embed=discord.Embed(title="Added vote for \"" + s[1] + "\"", description="[" + s[2].upper().rstrip() + "] - " + s[0])
-        file = discord.File("/resources/images/pngs/" + titleID + ".png", filename="image.png")
-        embed.set_thumbnail(url="attachment://image.png")
 
-        await ctx.send(file=file, embed=embed)
+        if (path.exists("/resources/images/pngs/" + titleID + ".png")):
+            sendVoteToServer(titleID)
+            file = discord.File("/resources/images/pngs/" + titleID + ".png", filename="image.png")
+            embed.set_thumbnail(url="attachment://image.png")
+            await ctx.send(file=file, embed=embed)
 
-        
+        else:
+            await ctx.send(embed=embed)
+
+# @bot.event
+# async def on_command_error(ctx, error):
+#     if isinstance(error, discord.ext.commands.errors.CommandNotFound):
+#         await ctx.send("That command wasn't found!")        
 
 @bot.event
 async def on_message(message):
@@ -62,21 +79,28 @@ async def on_message(message):
 
         sanit = escape(unescape(message.content[:100].strip().strip(";;")))
         saname = escape(unescape(message.author.name[:20].strip().strip(";;")))
-        writeChatToFile(saname, st, sanit)
+        sendChatToServer(saname, st, sanit)
 
 
 # helper functions
 # Vote functions
 # Write titleID to file for vote tallying
-def writeVoteToFile(titleID):
+def sendVoteToServer(titleID):
     data = {"type": "vote", "titleID": titleID}
-    response = requests.post(listener, data)
-    print(response)
+    try:
+        response = requests.post(listener, data)
+        print(response)
+    except Exception as e:
+        handleException(e)
 
-def writeChatToFile(author, time, msg):
+def sendChatToServer(author, time, msg):
     data = {"type": "chat", "author": author, "time": time, "message": msg}
-    response = requests.post(listener, data)
-    print(response)
+    try:
+        response = requests.post(listener, data)
+        print(response)
+    except Exception as e:
+        handleException(e)
+    
 
 
 # Printing functions
@@ -97,29 +121,45 @@ def formatSearchResults(results):
 def searchByTitle(term):
     results = []
 
-    r = requests.get(fileserver + "/text/titleinfo.txt")
-    r.encoding = "utf-8"
-    for line in r.text.splitlines():
-        if term.upper() in line.upper():
-            results.append(line)
-        if len(results) > 5 :
-            return results
+    try: 
+        r = requests.get(fileserver + "/text/titleinfo.txt")
+        r.encoding = "utf-8"
+        
+        for line in r.text.splitlines():
+            if term.upper() in line.upper():
+                results.append(line)
+            if len(results) > 5 :
+                return results
+    except Exception as e:
+        handleException(e)
+        return results
 
     return results
 
 
 def detailsFromID(titleID):
-    r = requests.get(fileserver + "/text/titleinfo.txt")
-    r.encoding = "utf-8"
-    for line in r.text.splitlines():
-        if line[8:16] == titleID[8:16]:
-            return line
+    try: 
+        r = requests.get(fileserver + "/text/titleinfo.txt")
+        r.encoding = "utf-8"
+        for line in r.text.splitlines():
+            if line[8:16] == titleID[8:16]:
+                return line
+    except Exception as e:
+        handleException(e)
+    
     return 0
 
 def titleFromID(titleID):
     d = detailsFromID(titleID)
     s = d.split(';')
     return s[1]
+
+# Housekeeping
+def handleException(e):
+    print("There was an issue:")
+    if (e.message):
+        print(e.message)
+        
 
 
 bot.run(TOKEN)

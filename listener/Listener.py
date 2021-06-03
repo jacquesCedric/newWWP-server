@@ -5,6 +5,7 @@ Usage::
 """
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib import parse
+import os
 import logging
 
 class S(BaseHTTPRequestHandler):
@@ -43,14 +44,29 @@ def run(server_class=HTTPServer, handler_class=S, port=3000):
     httpd.server_close()
     # logging.info('Stopping httpd...\n')
 
+# Safety operations
+def doesIDExist(titleID):
+    with open("/resources/text/titleinfo.txt", "r") as f:
+        for line in f:
+            if line[8:16] == titleID[8:16]:
+                return True
+    return False
+
 # Saving operations
 def writeVoteToFile(titleID):
-    with open("/resources/text/vote.txt", "a") as f:
-        f.write(titleID + "\r")
+    if doesIDExist(titleID):
+        with open("/resources/text/vote.txt", "a") as f:
+            f.write(titleID + "\r")
+
+        os.system("echo \"$(tail -n 200 /resources/text/vote.txt)\" > /resources/text/vote.txt")
+    else:
+        print("Could not write vote for: " + titleID)
 
 def writeChatToFile(details):
     with open("/resources/text/msg.txt", "a") as f:
         f.write(details["author"][0] + ";;" + details["time"][0] + ";;" + details["message"][0] +"\r")
+
+    os.system("echo \"$(tail -n 200 /resources/text/msg.txt)\" > /resources/text/msg.txt")
 
 
 # Main function

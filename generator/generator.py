@@ -40,6 +40,12 @@ def grabContent():
         counts = collections.Counter(split)
         m_common = counts.most_common(10)
 
+    if len(m_common) != 10:
+        with open("/resources/text/vote-fb.txt") as f:
+            split = f.read().split()
+            counts = collections.Counter(split)
+            m_common = counts.most_common(10)
+
     # Lets refine those votes and get some details
     for tup in m_common:
         ids.append(detailsFromID(tup[0]))
@@ -182,17 +188,21 @@ def every(delay, task):
 
 #  Main script
 def main():
-    grabContent()
-    base = generateBase()
-    tree = etree.ElementTree(base)
-    with open('/resources/1stNUP.xml', 'wb') as f:
-        f.write(etree.tostring(tree, pretty_print=True, xml_declaration=True, encoding='UTF-8'))
+    try: 
+        grabContent()
+        base = generateBase()
+        tree = etree.ElementTree(base)
+        with open('/resources/1stNUP.xml', 'wb') as f:
+            f.write(etree.tostring(tree, pretty_print=True, xml_declaration=True, encoding='UTF-8'))
 
-    print("updated NUP")
-    global messages, ids
-    messages = []
-    ids = []
-
+        print("updated NUP")
+    except Exception as e:
+        print("There was an issue updating the NUP")
+        print("Error: " + e.message)
+    finally:
+        global messages, ids
+        messages = []
+        ids = []
 
 if __name__ == "__main__":
     main()
